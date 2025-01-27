@@ -1,5 +1,5 @@
 import Link from "next/link";
-import navlinks from "./link/navLink.jsx;
+import navlinks from "./link/navLink.jsx";
 
 const Links = () => {
   const links = [
