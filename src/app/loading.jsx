@@ -1,7 +1,10 @@
 const Loading = () => {
     return (
-      <div>Loading</div>
-    )
-  }
+      <div>
+        <p>Loading...</p>
+      </div>
+    );
+  };
   
-  export default Loading
+  export default Loading;
+  
