@@ -20,7 +20,7 @@ const Home = () => {
       </div>
       <div className={styles.imgContainer}>
         <Image
-          src="\Meme Think GIF.gif"
+          src="/Meme Think GIF.gif"
           alt=""
           fill
           className={styles.heroImg}
