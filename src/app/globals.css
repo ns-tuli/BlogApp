@@ -4,6 +4,7 @@
   --text: white;
   --textSoft: #e5e5e5;
   --btn: #3673fd;
+  --btn-hover: #2554c7; /* Darker blue for hover effect */
 }
 
 * {
@@ -15,7 +16,6 @@
 body {
   background-color: var(--bg);
   color: var(--text);
-
 }
 
 a {
