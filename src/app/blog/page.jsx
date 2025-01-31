@@ -5,7 +5,7 @@ import { getPosts } from "@/lib/data";
 // FETCH DATA WITH AN API
 const getData = async () => {
   const res = await fetch("http://localhost:3000/api/blog", {
-    next: { revalidate: 3600 },
+    cache: "no-store", // This forces fresh data every time
   });
 
   if (!res.ok) {
@@ -17,7 +17,7 @@ const getData = async () => {
 
 const BlogPage = async () => {
   // FETCH DATA WITH AN API
-  const posts = await getPosts();
+  const posts = await getData();
 
   // FETCH DATA WITHOUT AN API
   // const posts = await getPosts();

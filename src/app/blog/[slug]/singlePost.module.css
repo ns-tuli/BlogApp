@@ -26,8 +26,8 @@
 
 .detail {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  align-items: center; /* Aligns items horizontally */
+  gap: 30px; /* Adds spacing between elements */
 }
 
 .avatar {
