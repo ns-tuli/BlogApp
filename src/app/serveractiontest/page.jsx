@@ -1,19 +1,18 @@
-// ServerActionTestPage component
 import { addPost, deletePost } from "@/lib/action";
 
 const ServerActionTestPage = () => {
   return (
     <div>
-      <form method="POST" action={addPost}>
-        <input type="text" placeholder="title" name="title" />
-        <input type="text" placeholder="desc" name="desc" />
-        <input type="text" placeholder="slug" name="slug" />
-        <input type="text" placeholder="userId" name="userId" />
+      <form action={addPost} method="post">
+        <input type="text" name="title" placeholder="Title" required />
+        <input type="text" name="desc" placeholder="Description" required />
+        <input type="text" name="slug" placeholder="Slug" required />
+        <input type="text" name="userId" placeholder="User ID" required />
         <button type="submit">Create</button>
       </form>
 
-      <form method="POST" action={deletePost}>
-        <input type="text" placeholder="postId" name="id" />
+      <form action={deletePost}>
+        <input type="text" placeholder="postId" name="id" required />
         <button type="submit">Delete</button>
       </form>
     </div>
