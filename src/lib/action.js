@@ -1,215 +1,174 @@
 "use server";
-
 import { revalidatePath } from "next/cache";
-import { Post, User } from "./models";
-import { connectToDb } from "./utils";
-import { signIn, signOut } from "next-auth/react";
+import { Post, User } from "./models";  // Assuming these are defined in the models file
+import { connectToDb } from "./utils";  // Assuming a utility to connect to your DB
 import bcrypt from "bcryptjs";
 
-// Check if window is defined before using it
 const isClient = typeof window !== "undefined"; // This will be true on the client-side, false on the server-side
 
-// fixed the bug in the addPost function
+// Add a new blog post
 export const addPost = async (prevState) => {
-  "use server";
-
   console.log("🔥 Received prevState:", prevState);
 
-  // Check if prevState is a valid FormData object
+  // Ensure the data is a valid FormData object before processing
   const formData = prevState instanceof FormData ? prevState : new FormData();
 
   console.log("🔥 Extracted formData:", formData);
 
-  // ✅ Convert formData to object safely
+  // Convert FormData to a plain object
   const formObject = Object.fromEntries(formData.entries());
   console.log("🎯 Parsed Form Data:", formObject);
 
+  // Destructure the required fields
   const { title, desc, slug, userId } = formObject;
 
+  // Validation to ensure necessary fields are present
   if (!title || !desc || !slug || !userId) {
     return { error: "Missing required fields" };
   }
 
   try {
-    connectToDb();
-    const newPost = new Post({ title, desc, slug, userId });
+    // Connect to the database
+    await connectToDb();
 
+    // Create a new post instance
+    const newPost = new Post({
+      title,
+      desc,
+      slug,
+      userId,
+    });
+
+    // Save the new post to the database
     await newPost.save();
-    console.log("✅ Saved to DB");
+    console.log("✅ Post saved to DB");
+
+    // Revalidate paths to update any cached data or triggers
     revalidatePath("/blog");
     revalidatePath("/admin");
 
     return { success: "Post created successfully!" };
   } catch (err) {
     console.error("🚨 Error saving post:", err);
-    return { error: "Something went wrong!" };
+    return { error: "Something went wrong while saving the post." };
   }
 };
 
+// Delete a blog post
 export const deletePost = async (formData) => {
+  // Ensure the formData is valid
   if (!formData) {
     return { error: "Invalid form data" };
   }
 
   const { id } = Object.fromEntries(formData);
 
+  // Ensure the post ID is provided
   if (!id) {
     return { error: "Post ID is required" };
   }
 
   try {
-    connectToDb();
+    // Connect to the database
+    await connectToDb();
 
-    await Post.findByIdAndDelete(id);
-    console.log("deleted from db");
-    revalidatePath("/blog");
-    revalidatePath("/admin");
-  } catch (err) {
-    console.log(err);
-    return { error: "Something went wrong!" };
-  }
-};
+    // Find and delete the post from the database
+    const deletedPost = await Post.findByIdAndDelete(id);
 
-export const addUser = async (prevState, formData) => {
-  if (!formData) {
-    return { error: "Invalid form data" };
-  }
-
-  const { username, email, password, img } = Object.fromEntries(formData);
-
-  if (!username || !email || !password) {
-    return { error: "Missing required fields" };
-  }
-
-  try {
-    connectToDb();
-    const newUser = new User({
-      username,
-      email,
-      password,
-      img,
-    });
-
-    await newUser.save();
-    console.log("saved to db");
-    revalidatePath("/admin");
-  } catch (err) {
-    console.log(err);
-    return { error: "Something went wrong!" };
-  }
-};
-
-export const deleteUser = async (formData) => {
-  if (!formData) {
-    return { error: "Invalid form data" };
-  }
-
-  const { id } = Object.fromEntries(formData);
-
-  if (!id) {
-    return { error: "User ID is required" };
-  }
-
-  try {
-    connectToDb();
-
-    await Post.deleteMany({ userId: id });
-    await User.findByIdAndDelete(id);
-    console.log("deleted from db");
-    revalidatePath("/admin");
-  } catch (err) {
-    console.log(err);
-    return { error: "Something went wrong!" };
-  }
-};
-
-export const handleGithubLogin = async () => {
-  "use server";
-  if (isClient) {
-    await signIn("github");
-  } else {
-    console.log("Oops, `window` is not defined, cannot execute login.");
-  }
-};
-
-export const handleLogout = async () => {
-  "use server";
-  if (isClient) {
-    await signOut();
-  } else {
-    console.log("Oops, `window` is not defined, cannot execute logout.");
-  }
-};
-
-export const register = async (previousState, formData) => {
-  if (!formData) {
-    return { error: "Invalid form data" };
-  }
-
-  const { username, email, password, img, passwordRepeat } = Object.fromEntries(formData);
-
-  if (!username || !email || !password || !passwordRepeat) {
-    return { error: "Missing required fields" };
-  }
-
-  if (password !== passwordRepeat) {
-    return { error: "Passwords do not match" };
-  }
-
-  try {
-    connectToDb();
-
-    const user = await User.findOne({ username });
-
-    if (user) {
-      return { error: "Username already exists" };
+    if (!deletedPost) {
+      return { error: "Post not found" };
     }
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    console.log("✅ Post deleted");
 
-    const newUser = new User({
-      username,
-      email,
-      password: hashedPassword,
-      img,
-    });
+    // Revalidate paths to refresh the cached content
+    revalidatePath("/blog");
+    revalidatePath("/admin");
 
-    await newUser.save();
-    console.log("saved to db");
-
-    return { success: true };
+    return { success: "Post deleted successfully!" };
   } catch (err) {
-    console.log(err);
-    return { error: "Something went wrong!" };
+    console.error("🚨 Error deleting post:", err);
+    return { error: "Something went wrong while deleting the post." };
   }
 };
 
-// Login function
-export const login = async (formData) => {
-  if (!formData || !(formData instanceof FormData)) {
-    console.error("Invalid formData:", formData);
+export const handleGithubLogin = async (e) => {
+  e.preventDefault();
+
+  // Trigger the GitHub OAuth login with NextAuth.js
+  const result = await signIn("github", {
+    redirect: false, // Prevent auto redirect
+  });
+
+  if (result?.error) {
+    console.error("GitHub login failed:", result.error);
+  } else {
+    window.location.href = "/"; // Redirect to the dashboard upon success
+  }
+};
+
+// Register a new user
+export const register = async (formData) => {
+  if (!formData) {
     return { error: "Invalid form data" };
   }
 
-  const { username, password } = Object.fromEntries(formData.entries());
+  const { username, password } = Object.fromEntries(formData);
 
-  // Ensure both username and password are provided
   if (!username || !password) {
     return { error: "Username and password are required" };
   }
 
   try {
-    if (isClient) {
-      await signIn("credentials", { username, password });
-    } else {
-      console.log("Oops, `window` is not defined, cannot execute login.");
+    // Check if user already exists
+    const existingUser = await User.findOne({ username });
+    if (existingUser) {
+      return { error: "Username already taken" };
     }
+
+    // Hash the password
+    const hashedPassword = bcrypt.hashSync(password, 10);
+
+    // Create and save the new user
+    const newUser = new User({
+      username,
+      password: hashedPassword,
+    });
+
+    await newUser.save();
+    console.log("✅ User registered");
+
+    return { success: "User registered successfully!" };
   } catch (err) {
-    console.error("Login error:", err);
-    if (err.message.includes("CredentialsSignin")) {
+    console.error("🚨 Error registering user:", err);
+    return { error: "Something went wrong while registering the user." };
+  }
+};
+
+// Handle user login (using credentials)
+export const login = async (formData) => {
+  if (!formData) {
+    return { error: "Invalid form data" };
+  }
+
+  const { username, password } = Object.fromEntries(formData);
+
+  if (!username || !password) {
+    return { error: "Username and password are required" };
+  }
+
+  try {
+    // Find user in the database
+    const user = await User.findOne({ username });
+    if (!user || !bcrypt.compareSync(password, user.password)) {
       return { error: "Invalid username or password" };
     }
-    throw err;
+
+    console.log("✅ User logged in");
+
+    return { success: "Login successful!" };
+  } catch (err) {
+    console.error("🚨 Error logging in:", err);
+    return { error: "Something went wrong while logging in" };
   }
 };

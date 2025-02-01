@@ -1,24 +1,43 @@
-"use client";
+"use client"; // Mark this component as client-side
 
-import { login } from "@/lib/action";
-import styles from "./loginForm.module.css";
-import { useActionState } from "react";
-import Link from "next/link";
+import { signIn } from "next-auth/react";
+import { useState } from "react";
 
-const LoginForm = () => {
-  const [state, formAction] = useActionState(login, undefined);
+export default function LoginForm() {
+  const [error, setError] = useState(null); // For handling errors
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const username = formData.get("username");
+    const password = formData.get("password");
+
+    const result = await signIn("credentials", {
+      username,
+      password,
+      redirect: false, // Prevent automatic redirection
+    });
+
+    if (result?.error) {
+      setError(result.error); // Display error message
+    } else {
+      window.location.href = "/dashboard"; // Redirect on success
+    }
+  };
 
   return (
-    <form className={styles.form} action={formAction}>
-      <input type="text" placeholder="username" name="username" />
-      <input type="password" placeholder="password" name="password" />
-      <button>Login</button>
-      {state?.error && <div>{state.error}</div>}
-      <Link href="/register">
-        {"Don't have an account?"} <b>Register</b>
-      </Link>
-    </form>
+    <div>
+      <form onSubmit={handleSubmit}>
+        <input type="text" name="username" placeholder="Username" required />
+        <input
+          type="password"
+          name="password"
+          placeholder="Password"
+          required
+        />
+        <button type="submit">Login</button>
+      </form>
+      {error && <p style={{ color: "red" }}>{error}</p>} {/* Display error */}
+    </div>
   );
-};
-
-export default LoginForm;
+}

@@ -27,7 +27,7 @@ const login = async (credentials) => {
   }
 };
 
-export default NextAuth({
+const authOptions = {
   ...authConfig,
   providers: [
     GitHub({
@@ -62,12 +62,14 @@ export default NextAuth({
             await newUser.save();
           }
         } catch (err) {
-          console.log(err);
-          return false;
+          console.error(err);
         }
       }
       return true;
     },
-    ...authConfig.callbacks,
   },
-});
+};
+
+const authHandler = NextAuth(authOptions);
+
+export { authHandler as GET, authHandler as POST };
